@@ -80,6 +80,24 @@ public class Operations {
         return tr.getBit(0) ? 1 : 0;
     }
 
+    public static ElementFields powHex(ElementFields a, String hex) {
+        ElementFields res = ElementFields.one();
+        for (char c : hex.toUpperCase().toCharArray()) {
+            int v = Character.digit(c, 16);
+            if (v < 0) {
+                throw new IllegalArgumentException("invalid hex digit: " + c);
+            }
+            for (int i = 3; i >= 0; i--) {
+                res = sq(res);
+                if (((v >> i) & 1) == 1) {
+                    res = mul(res, a);
+                }
+            }
+        }
+        return res;
+    }
+
+
 }
 
 

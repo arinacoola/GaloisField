@@ -2,10 +2,10 @@ import java.util.Random;
 
 public class Main {
     public static void main(String[] args) throws InterruptedException {
-        ElementFields a = fromHex("1a3f");
-        ElementFields b = fromHex("beef");
+        ElementFields a = fromHex("77cec6a14dc84e14795a9f0fd6cbfdefa28baa356c043d39b6243060a349");
+        ElementFields b = fromHex("65fad64fd57003ab9e395d07652265eac9a9b6d480ee7548513cda6a2a7d");
 
-        ElementFields add = Operations.add(a, b);
+         ElementFields add = Operations.add(a, b);
         System.out.println("A + B = " + hex(add));
         checkEq("Add", add, Operations.add(b, a));
 
@@ -21,12 +21,12 @@ public class Main {
         System.out.println("A^-1 = " + hex(inv));
         checkEq("Inverse A*A^-1", Operations.mul(a, inv), ElementFields.one());
 
-        String cHex = "1234";
-        long C = Long.parseLong(cHex, 16);
+        String cHex = "322170b85e5a828e1cbaaf0d80cbf3222900960b9f7bb1f0dc58706c5cd0";
 
-        ElementFields powAC = Operations.pow(a, C);
+        ElementFields powAC = Operations.powHex(a, cHex);
         System.out.println("A^C = " + hex(powAC));
-        checkEq("Pow A^(C+1) = A^C * A", Operations.pow(a, C + 1), Operations.mul(powAC, a));
+        checkEq("PowHex A^1 = A", Operations.powHex(a, "1"), a);
+
 
         int tr = Operations.trace(a);
         System.out.println("Trace(A) = " + tr);
@@ -49,9 +49,10 @@ public class Main {
             Operations.mul(As[i], Bs[i]);
             Operations.sq(As[i]);
             Operations.inverseElMul(As[i]);
-            Operations.pow(As[i], C);
+            Operations.powHex(As[i], cHex);
             Operations.trace(As[i]);
         }
+
         System.gc();
         Thread.sleep(20);
 
@@ -88,7 +89,7 @@ public class Main {
 
         t0 = System.nanoTime();
         for (int i = 0; i < heavy; i++) {
-            Operations.pow(As[i], C);
+            Operations.powHex(As[i], cHex);
         }
         t1 = System.nanoTime();
         tPow = t1 - t0;
@@ -109,7 +110,7 @@ public class Main {
         System.out.printf("Trace:   %.2f ns%n", tTrace / (double) launchOp);
 
         double freqGHz = 3.2;
-        System.out.println("\nEstimated CPU cycles per operation:");
+        System.out.println("\ncyclles per operation:");
         System.out.printf("Add:   %.0f cycles%n", (tAdd   / (double) launchOp) * freqGHz);
         System.out.printf("Mul:    %.0f cycles%n", (tMul   / (double) launchOp) * freqGHz);
         System.out.printf("Square:  %.0f cycles%n", (tSq    / (double) launchOp) * freqGHz);
@@ -148,16 +149,23 @@ public class Main {
     }
 
     private static ElementFields fromHex(String hex) {
+        hex = hex.trim();
+        if (hex.startsWith("0x") || hex.startsWith("0X")) hex = hex.substring(2);
+        hex = hex.replaceAll("\\s+", "").toUpperCase();
         StringBuilder bin = new StringBuilder();
-        for (char c : hex.toUpperCase().toCharArray()) {
-            int v = Integer.parseInt(String.valueOf(c), 16);
-            String b = String.format("%4s", Integer.toBinaryString(v)).replace(' ', '0');
-            bin.append(b);
+        for (char c : hex.toCharArray()) {
+            int v = Character.digit(c, 16);
+            if (v < 0) throw new IllegalArgumentException("invalid hex digit: " + c);
+            bin.append(String.format("%4s", Integer.toBinaryString(v)).replace(' ', '0'));
         }
-        while (bin.length() < ElementFields.m) bin.insert(0, '0');
-        if (bin.length() > ElementFields.m) {
+        String bits = bin.toString().replaceFirst("^0+(?!$)", "");
+        if (bits.length() > ElementFields.m) {
             throw new IllegalArgumentException("hex too long for GF(2^" + ElementFields.m + ")");
         }
-        return ElementFields.fromBitString(bin.toString());
+        int pad = ElementFields.m - bits.length();
+        bits = "0".repeat(pad) + bits;
+
+        return ElementFields.fromBitString(bits);
     }
+
 }
