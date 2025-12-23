@@ -44,18 +44,6 @@ public class Operations {
         return fg;
     }
 
-    public static ElementFields pow(ElementFields f, long k){
-        ElementFields res = ElementFields.one();
-        ElementFields base = new ElementFields(f);
-        while (k > 0){
-            if ((k & 1L) == 1L){
-                res = mul(res, base);
-            }
-            base = sq(base);
-            k =(k>> 1);
-        }
-        return res;
-    }
 
     public static ElementFields inverseElMul(ElementFields f) {
         if (f.findDegree() == -1)
